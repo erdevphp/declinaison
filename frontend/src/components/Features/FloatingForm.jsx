@@ -1,31 +1,151 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FiPhone, FiX } from 'react-icons/fi';
-import axios from 'axios';
-import toast from 'react-hot-toast';
-import { minutesToTime, timeToHourMinutes, timeToMinutes } from '../../utils/time';
+import { FiX } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const FloatingForm = ({ isOpen, setIsOpen }) => {
+const FloatingForm = ({ isOpen, setIsOpen, initialData = null, onSave }) => {
   const boxRef = useRef(null);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  // État du formulaire
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    duration: 60,
+  });
+  const isEdit = !!initialData;
 
-  // Position initiale : à droite avec une marge de 1rem (16px)
   useEffect(() => {
-    const setInitialPosition = () => {
+    if (initialData && isOpen) {
+      setFormData({
+        name: initialData.name || '',
+        description: initialData.description || '',
+        duration: initialData.duration || 60,
+      });
+    } else if (!isOpen) {
+      // Reset quand on ferme
+      setFormData({ name: '', description: '', duration: 60 });
+    }
+  }, [initialData, isOpen]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+    setIsOpen(false);
+  };
+
+  // Clés pour localStorage
+  const POSITION_KEY = 'floatingForm_position';
+  const HAS_BEEN_POSITIONED_KEY = 'floatingForm_hasBeenPositioned';
+
+  // Centrer le formulaire
+  const centerBox = useCallback(() => {
+    if (!boxRef.current || !isOpen) return;
+
+    requestAnimationFrame(() => {
       if (!boxRef.current) return;
       const box = boxRef.current;
-      const marginRight = 16; // 1rem = 16px
-      const x = window.innerWidth - box.offsetWidth - marginRight;
-      const y = (window.innerHeight - box.offsetHeight) / 2; // centrage vertical
-      setPos({ x, y });
-    };
+      const x = (window.innerWidth - box.offsetWidth) / 2;
+      const y = (window.innerHeight - box.offsetHeight) / 2;
+      setPos({ x: Math.max(0, x), y: Math.max(0, y) });
+    });
+  }, [isOpen]);
 
-    setInitialPosition();
-    window.addEventListener('resize', setInitialPosition);
-    return () => window.removeEventListener('resize', setInitialPosition);
+  // Sauvegarder position + flag
+  const savePosition = useCallback((newPos) => {
+    localStorage.setItem(POSITION_KEY, JSON.stringify(newPos));
+    localStorage.setItem(HAS_BEEN_POSITIONED_KEY, 'true');
   }, []);
 
+  // Charger la position sauvegardée
+  const loadSavedPosition = useCallback(() => {
+    try {
+      const hasBeenPositioned = localStorage.getItem(HAS_BEEN_POSITIONED_KEY);
+      const saved = localStorage.getItem(POSITION_KEY);
+
+      if (hasBeenPositioned === 'true' && saved) {
+        const { x, y } = JSON.parse(saved);
+        // Vérifier que la position reste dans l'écran
+        if (boxRef.current) {
+          const maxX = window.innerWidth - boxRef.current.offsetWidth;
+          const maxY = window.innerHeight - boxRef.current.offsetHeight;
+          return {
+            x: Math.min(Math.max(0, x), maxX),
+            y: Math.min(Math.max(0, y), maxY)
+          };
+        }
+        return { x, y };
+      }
+    } catch (e) {
+      console.error('Erreur chargement position', e);
+    }
+    return null;
+  }, []);
+
+  // À l'ouverture : charger position sauvegardée ou centrer
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = setTimeout(() => {
+      const savedPos = loadSavedPosition();
+
+      if (savedPos) {
+        // Position sauvegardée existe → l'utiliser
+        setPos(savedPos);
+      } else {
+        // Première fois de TOUTE L'HISTOIRE → centrer
+        centerBox();
+      }
+    }, 10);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, loadSavedPosition, centerBox]);
+
+  // Sauvegarder la position quand elle change (après drag)
+  useEffect(() => {
+    if (!dragging && (pos.x !== 0 || pos.y !== 0)) {
+      savePosition(pos);
+    }
+  }, [pos, dragging, savePosition]);
+
+  // Réagir aux changements de taille de fenêtre
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleResize = () => {
+      if (!boxRef.current) return;
+
+      const box = boxRef.current;
+      const maxX = window.innerWidth - box.offsetWidth;
+      const maxY = window.innerHeight - box.offsetHeight;
+
+      setPos(prev => {
+        const newX = Math.min(Math.max(0, prev.x), maxX);
+        const newY = Math.min(Math.max(0, prev.y), maxY);
+
+        // Sauvegarder automatiquement si ajusté
+        if (newX !== prev.x || newY !== prev.y) {
+          savePosition({ x: newX, y: newY });
+        }
+
+        return { x: newX, y: newY };
+      });
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    resizeObserver.observe(document.body);
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
+    };
+  }, [isOpen, savePosition]);
+
+  // Drag & drop
   const startDrag = (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON') {
       return;
@@ -39,139 +159,140 @@ const FloatingForm = ({ isOpen, setIsOpen }) => {
 
   const duringDrag = (e) => {
     if (!dragging) return;
-    // Calcul de la nouvelle position avec limites (optionnel)
+
     let newX = e.clientX - offset.x;
     let newY = e.clientY - offset.y;
-    
-    // Optionnel : empêcher de sortir de l'écran
+
     if (boxRef.current) {
       const maxX = window.innerWidth - boxRef.current.offsetWidth;
       const maxY = window.innerHeight - boxRef.current.offsetHeight;
       newX = Math.min(Math.max(0, newX), maxX);
       newY = Math.min(Math.max(0, newY), maxY);
     }
-    
+
     setPos({ x: newX, y: newY });
   };
 
   const stopDrag = () => setDragging(false);
 
-  const isEdit = false;
-  const loading = false;
-
   return (
-    <div
-      ref={boxRef}
-      onMouseDown={startDrag}
-      onMouseMove={duringDrag}
-      onMouseUp={stopDrag}
-      onMouseLeave={stopDrag}
-      className={`fixed bg-white rounded-2xl dark:bg-gray-900 shadow-2xl border border-gray-200 z-50 ${
-        dragging ? 'cursor-grabbing' : 'cursor-move'
-      }`}
-      style={{
-        top: `${pos.y}px`,
-        left: `${pos.x}px`,
-        width: '24rem',
-        maxWidth: 'calc(100vw - 2rem)',
-        display: isOpen ? 'block' : 'none',
-      }}
-    >
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {isEdit ? 'Modifier la tâche' : 'Nouvelle tâche'}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {isEdit ? 'Modifiez les détails de votre tâche' : 'Ajoutez une nouvelle tâche à votre planning'}
-            </p>
-          </div>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-          >
-            <FiX className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Formulaire */}
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          console.log('Submit');
-        }}>
-          <div className="space-y-4">
-            {/* Nom */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Nom de la tâche <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                placeholder="Ex: Développement API"
-                autoFocus
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Description
-              </label>
-              <textarea
-                className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                rows="3"
-                placeholder="Description détaillée de la tâche..."
-              />
-            </div>
-
-            {/* Heures */}
-            <div className="grid grid-cols-2 gap-4">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          ref={boxRef}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.2 }}
+          onMouseDown={startDrag}
+          onMouseMove={duringDrag}
+          onMouseUp={stopDrag}
+          onMouseLeave={stopDrag}
+          className="fixed bg-white rounded-2xl dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 z-50"
+          style={{
+            top: `${pos.y}px`,
+            left: `${pos.x}px`,
+            width: '24rem',
+            maxWidth: 'calc(100vw - 2rem)',
+            cursor: dragging ? 'grabbing' : 'grab',
+          }}
+        >
+          <div className="p-6">
+            {/* Header */}
+            <div
+              className="flex items-center justify-between mb-6 cursor-default"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Début <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  className="w-full px-3 py-2.5 bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-600 dark:text-gray-400 font-bold border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  disabled={true}
-                  style={{ opacity: 0.7 }}
-                />
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {isEdit ? 'Modifier la tâche' : 'Nouvelle tâche'}
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {isEdit ? 'Modifiez les détails de votre tâche' : 'Ajoutez une nouvelle tâche à votre planning'}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Formulaire */}
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              console.log('Submit');
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nom de la tâche <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    placeholder="Ex: Développement API"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    rows="3"
+                    placeholder="Description détaillée de la tâche..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Début <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="time"
+                      className="w-full px-3 py-2.5 bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-600 dark:text-gray-300 font-medium border border-gray-300 dark:border-gray-600 rounded-lg"
+                      disabled={true}
+                      style={{ opacity: 0.7 }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Fin <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="time"
+                      className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Fin <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                />
+              <div className="flex gap-3 mt-8">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-3 rounded-lg font-medium transition-all bg-primary-600 hover:bg-primary-700 text-white"
+                >
+                  Valider
+                </button>
               </div>
-            </div>
+            </form>
           </div>
-
-          {/* Boutons */}
-          <div className="flex gap-3 mt-8">
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-3 rounded-lg font-medium transition-all bg-sky-800 text-amber-50 dark:bg-sky-700 hover:bg-sky-900 dark:hover:bg-sky-600"
-            >
-              Valider
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

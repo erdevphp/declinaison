@@ -33,3 +33,36 @@ export const totalMinutesInDay = (tasks) => {
         return total + duration;
     }, 0)
 }
+
+
+/**
+ * Ajoute des minutes à une heure
+ */
+export const addMinutesToTime = (timeStr, minutesToAdd) => {
+  const totalMinutes = timeToMinutes(timeStr) + minutesToAdd;
+  return minutesToTime(totalMinutes);
+};
+
+/**
+ * Calcule la durée entre deux heures (en minutes)
+ */
+export const getDuration = (startTime, endTime) => {
+  return timeToMinutes(endTime) - timeToMinutes(startTime);
+};
+
+/**
+ * Calcule le temps total d'une liste de tâches
+ */
+export const calculateTotalMinutes = (tasks) => {
+  return tasks.reduce((total, task) => total + task.duration, 0);
+};
+
+/**
+ * Vérifie si l'heure est pendant la pause déjeuner
+ */
+export const isLunchTime = (time) => {
+  const minutes = timeToMinutes(time);
+  const lunchStart = timeToMinutes('12:00');
+  const lunchEnd = timeToMinutes('13:00');
+  return minutes >= lunchStart && minutes < lunchEnd;
+};
