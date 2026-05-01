@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -12,9 +12,26 @@ const Login = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { loading } = useSelector((state) => state.auth)
+  const { isAuthenticated } = useSelector((state) => state.auth)
+
+  const searchParams = new URLSearchParams(location.search)
+  const redirectUrl = searchParams.get('redirect') || '/'
+
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+
+
+  // Décoder l'URL (car on a utilisé encodeURIComponent)
+  const decodedRedirectUrl = decodeURIComponent(redirectUrl)
+
+  // Si déjà authentifié, rediriger vers la page demandée ou l'accueil
+  useEffect(() => {
+    if (isAuthenticated && !loading) {
+      navigate(decodedRedirectUrl, { replace: true })
+    }
+  }, [isAuthenticated, loading, navigate, decodedRedirectUrl])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -25,7 +42,7 @@ const Login = () => {
       const data = await authService.login(email, password)
       dispatch(loginSuccess(data.user))
       toast.success(data.message)
-      navigate('/')
+      navigate(redirectUrl)
     } catch (err) {
       const message = err.response?.data?.error || 'Erreur de connexion'
       setError(message)

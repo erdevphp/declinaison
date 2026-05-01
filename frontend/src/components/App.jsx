@@ -12,11 +12,10 @@ import Timesheet from './pages/timesheet/Timesheet'
 const PrivateRoute = ({ children }) => {
   const location = useLocation()
   const { isAuthenticated } = useSelector((state) => state.auth)
-  return isAuthenticated ? children : <Navigate to="/login" state={{ from: location }} replace />
+  return isAuthenticated ? children : <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} replace />
 }
 
 function App() {
-  const { isAuthenticated } = useSelector((state) => state.auth)
 
   return (
     <Router>
@@ -25,7 +24,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route
             path="/login"
-            element={!isAuthenticated ? <Login /> : <Navigate to={`/`} replace />}
+            element={<Login />}
           />
           <Route path="/register" element={<Register />} />
 
