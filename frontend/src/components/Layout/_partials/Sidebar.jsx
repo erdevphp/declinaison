@@ -20,8 +20,8 @@ const Sidebar = ({ closeDrawer }) => {
   if (user) {
     menuItems = [
       { path: '/', name: 'Tableau de bord', icon: FiHome },
-      { path: '/clients', name: 'Clients', icon: FiUsers },
-      { path: '/factures', name: 'Factures', icon: FiFileText },
+      { path: '/employee', name: 'Employé', icon: FiUsers },
+      { path: '/timesheet', name: 'Timesheet', icon: FiFileText },
       { path: '/produits', name: 'Produits', icon: FiPackage },
       { path: '/commandes', name: 'Commandes', icon: FiShoppingCart },
       { path: '/statistiques', name: 'Statistiques', icon: FiBarChart2 },

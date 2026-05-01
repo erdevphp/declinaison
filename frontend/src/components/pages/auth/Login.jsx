@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { loginStart, loginSuccess, loginFailure } from '../../../store/slices/authSlice'
 import { authService } from '../../../services/authService'
 import logo from '../../../assets/logos/logos_declinaison.png'
+import toast from 'react-hot-toast'
 
 const Login = () => {
   const dispatch = useDispatch()
@@ -17,10 +18,11 @@ const Login = () => {
     e.preventDefault()
     setError('')
     dispatch(loginStart())
-    
+
     try {
       const data = await authService.login(email, password)
       dispatch(loginSuccess(data.user))
+      toast.success(data.message)
       navigate('/')
     } catch (err) {
       const message = err.response?.data?.error || 'Erreur de connexion'
@@ -43,14 +45,14 @@ const Login = () => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Déclinaison</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-2">Connexion</p>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm">
               {error}
             </div>
           )}
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email
@@ -64,7 +66,7 @@ const Login = () => {
               autoFocus
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Mot de passe
@@ -77,7 +79,7 @@ const Login = () => {
               required
             />
           </div>
-          
+
           <button
             type="submit"
             className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
@@ -85,6 +87,12 @@ const Login = () => {
             Se connecter
           </button>
         </form>
+
+        <div className="text-center mt-6">
+          <Link to="/register" className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
+            Pas encore de compte ? S'inscrire
+          </Link>
+        </div>
       </motion.div>
     </div>
   )

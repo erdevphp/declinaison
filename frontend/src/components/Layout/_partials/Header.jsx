@@ -49,12 +49,14 @@ const Header = ({ onMenuClick, isMobile }) => {
   }
 
   const handleLogout = async () => {
-    try {
-      await authService.logout()
-      dispatch(logoutSuccess())
-      navigate('/login')
-    } catch (error) {
-      console.error('Erreur déconnexion', error)
+    if (confirm("Voulez-vous vraiment vous déconnecter?")) {
+      try {
+        await authService.logout()
+        dispatch(logoutSuccess())
+        navigate('/login')
+      } catch (error) {
+        console.error('Erreur déconnexion', error)
+      }
     }
   }
 
@@ -141,7 +143,7 @@ const Header = ({ onMenuClick, isMobile }) => {
                 <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                   <FiUser className="w-4 h-4 text-white" />
                 </div>
-                <span className="hidden md:inline text-sm font-medium text-gray-700 dark:text-gray-200">Admin</span>
+                <span className="hidden md:inline text-sm font-medium text-gray-700 dark:text-gray-200">{user?.first_name || user?.email || 'Profil'}</span>
                 <FiChevronDown className="hidden md:block w-4 h-4 text-gray-500 dark:text-gray-400" />
               </button>
               <AnimatePresence>
