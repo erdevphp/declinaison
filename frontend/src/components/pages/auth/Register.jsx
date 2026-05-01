@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { loginStart, loginSuccess, loginFailure } from '../../../store/slices/authSlice'
 import { authService } from '../../../services/authService'
 import logo from '../../../assets/logos/logos_declinaison.png'
+import Spinner from '../../Features/Spinner'
 
 const Register = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { loading } = useSelector((state) => state.auth)
   const [email, setEmail] = useState('')
   const [first_name, setFirstName] = useState('')
   const [last_name, setLastName] = useState('')
@@ -154,7 +156,14 @@ const Register = () => {
             type="submit"
             className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
           >
-            Se connecter
+            {loading ? (
+              <span className='flex justify-center items-center gap-2'>
+                <Spinner size="sm" color="white" />
+                <span>Inscription...</span>
+              </span>
+            ) : (
+              <span>S'inscrire</span>
+            )}
           </button>
         </form>
         <div className="text-center mt-6">

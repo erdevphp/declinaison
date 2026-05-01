@@ -1,15 +1,17 @@
 import { useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { loginStart, loginSuccess, loginFailure } from '../../../store/slices/authSlice'
 import { authService } from '../../../services/authService'
 import logo from '../../../assets/logos/logos_declinaison.png'
 import toast from 'react-hot-toast'
+import Spinner from '../../Features/Spinner'
 
 const Login = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { loading } = useSelector((state) => state.auth)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -84,7 +86,14 @@ const Login = () => {
             type="submit"
             className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
           >
-            Se connecter
+            {loading ? (
+              <span className='flex justify-center items-center gap-2'>
+                <Spinner size="sm" color="white" />
+                <span>Connexion...</span>
+              </span>
+            ) : (
+              <span>Se connecter</span>
+            )}
           </button>
         </form>
 
