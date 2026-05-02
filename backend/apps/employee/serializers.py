@@ -7,8 +7,8 @@ User = get_user_model()
 class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'phone', 'role']
-        read_only_fields = ['id', 'role']
+        fields = ['id', 'email', 'first_name', 'last_name', 'phone', 'role', 'role_label', 'date_joined']
+        read_only_fields = ['id', 'role', 'email']
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -33,3 +33,4 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True, validators=[validate_password])
+    

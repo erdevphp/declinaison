@@ -6,7 +6,8 @@ import {
   FiShoppingCart, FiSettings, FiAlignLeft, FiAlignRight,
   FiBarChart2, FiCreditCard,
   FiLogIn,
-  FiAtSign
+  FiAtSign,
+  FiUser
 } from 'react-icons/fi'
 import logo from '../../../assets/logos/logos_declinaison.png'
 
@@ -21,6 +22,7 @@ const Sidebar = ({ closeDrawer }) => {
     menuItems = [
       { path: '/', name: 'Tableau de bord', icon: FiHome },
       { path: '/employee', name: 'Employé', icon: FiUsers },
+      { path: '/profile', name: 'Profil', icon: FiUser },
       { path: '/timesheet', name: 'Timesheet', icon: FiFileText },
       { path: '/produits', name: 'Produits', icon: FiPackage },
       { path: '/commandes', name: 'Commandes', icon: FiShoppingCart },

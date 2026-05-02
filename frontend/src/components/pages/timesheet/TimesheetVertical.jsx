@@ -16,21 +16,6 @@ const LUNCH_DURATION = timeToMinutes(LUNCH_END) - timeToMinutes(LUNCH_START);
 const TOTAL_WIDTH = 800; // px pour la timeline
 
 const TimesheetVertical = ({ initialTasks = [], onSave, readOnly = false }) => {
-  // Utiliser le hook personnalisé au lieu de useState
-  const [isFormOpen, setIsFormOpen] = usePersistentState('floatingForm_isOpen', false);
-
-  // Optionnel : sauvegarder aussi le chemin de la page
-  const [lastPage, setLastPage] = usePersistentState('floatingForm_lastPage', window.location.pathname);
-
-  // Optionnel : vérifier si on est sur la bonne page pour rouvrir
-  const currentPath = window.location.pathname;
-  const shouldShowForm = isFormOpen && lastPage === currentPath;
-
-  // Quand on ferme le formulaire, on efface la page associée
-  const handleCloseForm = () => {
-    setIsFormOpen(false);
-    setLastPage(null);
-  };
 
   // Quand on ouvre le formulaire, on sauvegarde la page actuelle
   const handleOpenForm = () => {
@@ -297,11 +282,6 @@ const TimesheetVertical = ({ initialTasks = [], onSave, readOnly = false }) => {
 
       {/* Floating Form */}
       <FloatingForm
-        isOpen={shouldShowForm}
-        setIsOpen={(open) => {
-          if (!open) handleCloseForm();
-          else handleOpenForm();
-        }}
         initialData={editingTask}
         onSave={editingTask ? editTask : addTask}
       />

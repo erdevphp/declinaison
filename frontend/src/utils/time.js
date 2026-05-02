@@ -66,3 +66,39 @@ export const isLunchTime = (time) => {
   const lunchEnd = timeToMinutes('13:00');
   return minutes >= lunchStart && minutes < lunchEnd;
 };
+
+// Ajoute ces fonctions
+
+/**
+ * Calcule la position en pixels d'une heure dans une timeline
+ */
+export const getTimePosition = (time, startHour = 7, endHour = 16, totalPixels = 800) => {
+  const startMinutes = timeToMinutes(`${startHour}:00`);
+  const endMinutes = timeToMinutes(`${endHour}:00`);
+  const totalMinutes = endMinutes - startMinutes;
+  const currentMinutes = timeToMinutes(time);
+  
+  return ((currentMinutes - startMinutes) / totalMinutes) * totalPixels;
+};
+
+/**
+ * Calcule la largeur (en pixels) d'une durée
+ */
+export const getDurationWidth = (durationMinutes, startHour = 7, endHour = 16, totalPixels = 800) => {
+  const startMinutes = timeToMinutes(`${startHour}:00`);
+  const endMinutes = timeToMinutes(`${endHour}:00`);
+  const totalMinutes = endMinutes - startMinutes;
+  
+  return (durationMinutes / totalMinutes) * totalPixels;
+};
+
+/**
+ * Génère les heures pour l'en-tête (ex: 07:00, 08:00, ...)
+ */
+export const generateHourLabels = (startHour = 7, endHour = 16) => {
+  const labels = [];
+  for (let hour = startHour; hour <= endHour; hour++) {
+    labels.push(`${hour.toString().padStart(2, '0')}:00`);
+  }
+  return labels;
+};

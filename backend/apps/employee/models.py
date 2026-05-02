@@ -52,6 +52,10 @@ class Employee(AbstractUser):
     # Assigner le custom manager
     objects = EmployeeManager()
     
+    @property
+    def role_label(self):
+        return self.get_role_display()
+    
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
     

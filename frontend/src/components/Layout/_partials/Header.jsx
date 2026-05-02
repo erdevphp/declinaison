@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { logoutSuccess } from '../../../store/slices/authSlice'
 import { authService } from '../../../services/authService'
 
@@ -163,6 +163,13 @@ const Header = ({ onMenuClick, isMobile }) => {
                       Paramètres
                     </button>
                     <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                    <NavLink
+                      to="/profile"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <FiUser className="w-4 h-4" />
+                      Mon profil
+                    </NavLink>
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
