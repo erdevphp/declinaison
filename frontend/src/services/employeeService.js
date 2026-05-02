@@ -5,9 +5,21 @@ export const employeeService = {
     const response = await api.get('/employee/list/')
     return response.data
   },
-    // Mettre à jour le profil
+
+  // Mettre à jour le profil
   updateProfile: async (userData) => {
-    const response = await api.put('/employee/profile/update/', userData)
+    // Utiliser FormData pour les images
+    const formData = new FormData()
+
+    Object.keys(userData).forEach(key => {
+      if (userData[key] !== undefined && userData[key] !== null) {
+        formData.append(key, userData[key])
+      }
+    })
+
+    const response = await api.patch('/employee/profile/update/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
     return response.data
   },
 

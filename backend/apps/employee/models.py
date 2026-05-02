@@ -33,6 +33,10 @@ class Employee(AbstractUser):
     last_name = models.CharField(max_length=150, verbose_name="Nom")
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Téléphone")
     
+    # Nouveaux champs pour les images
+    profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
+    cover_picture = models.ImageField(upload_to='covers/', blank=True, null=True)
+    
      # Types d'employés possibles
     ROLE_CHOICES = [
         ('CHS', 'Chef de Service'),

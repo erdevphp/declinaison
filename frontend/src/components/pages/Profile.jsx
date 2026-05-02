@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { motion } from 'framer-motion'
-import { updateUser } from '../../store/slices/authSlice' 
-import { employeeService } from '../../services/employeeService'  
+import { updateUser } from '../../store/slices/authSlice'
+import { employeeService } from '../../services/employeeService'
 import {
   UserIcon,
   EnvelopeIcon,
@@ -11,6 +11,7 @@ import {
   BuildingOfficeIcon,
   MapPinIcon,
   PencilSquareIcon,
+  CameraIcon,
 } from '@heroicons/react/24/outline'
 import { 
   FiUsers, 
@@ -20,7 +21,6 @@ import {
   FiEdit2
 } from 'react-icons/fi'
 
-// Composant des statistiques (données fictives pour l'instant)
 const ProfileStats = () => {
   const stats = [
     { label: 'Clients gérés', value: '128', icon: FiUsers, color: 'blue' },
@@ -54,7 +54,6 @@ const ProfileStats = () => {
   )
 }
 
-// Composant des informations personnelles
 const ProfileInfo = ({ user, onEdit }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'Non renseigné'
@@ -63,7 +62,7 @@ const ProfileInfo = ({ user, onEdit }) => {
   }
 
   const infoSections = [
-    { icon: UserIcon, label: 'Nom complet', value: `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Non renseigné' },
+    { icon: UserIcon, label: 'Nom complet', value: user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Non renseigné' },
     { icon: EnvelopeIcon, label: 'Email', value: user?.email || 'Non renseigné' },
     { icon: PhoneIcon, label: 'Téléphone', value: user?.phone || 'Non renseigné' },
     { icon: BuildingOfficeIcon, label: 'Rôle', value: user?.role_label || user?.role || 'Non renseigné' },
@@ -102,7 +101,6 @@ const ProfileInfo = ({ user, onEdit }) => {
   )
 }
 
-// Composant d'activité récente (à connecter plus tard)
 const ProfileActivity = () => {
   const activities = [
     { id: 1, action: 'Connexion au système', time: 'Il y a 5 minutes', ip: '192.168.1.1' },
@@ -135,7 +133,6 @@ const ProfileActivity = () => {
   )
 }
 
-// Modal d'édition
 const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
   const [formData, setFormData] = useState({
     first_name: user?.first_name || '',
@@ -180,6 +177,9 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
       >
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Modifier le profil</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            L'email n'est pas modifiable
+          </p>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
@@ -208,6 +208,16 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+            <input
+              type="email"
+              value={user?.email || ''}
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">L'email ne peut pas être modifié</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Téléphone</label>
@@ -257,6 +267,8 @@ const Profile = () => {
   const dispatch = useDispatch()
   const { user } = useSelector((state) => state.auth)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const profileInputRef = useRef(null)
+  const coverInputRef = useRef(null)
 
   if (!user) {
     return (
@@ -273,6 +285,33 @@ const Profile = () => {
     dispatch(updateUser(updatedUser))
   }
 
+  const handleProfilePictureUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('profile_picture', file)
+
+    try {
+      const updatedUser = await employeeService.updateProfile({ profile_picture: file })
+      dispatch(updateUser(updatedUser))
+    } catch (err) {
+      console.error('Erreur upload profil', err)
+    }
+  }
+
+  const handleCoverPictureUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    try {
+      const updatedUser = await employeeService.updateProfile({ cover_picture: file })
+      dispatch(updateUser(updatedUser))
+    } catch (err) {
+      console.error('Erreur upload cover', err)
+    }
+  }
+
   const getInitials = () => {
     const first = user?.first_name?.charAt(0) || ''
     const last = user?.last_name?.charAt(0) || ''
@@ -280,27 +319,71 @@ const Profile = () => {
   }
 
   const getFullName = () => {
-    return `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Utilisateur'
+    return user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Utilisateur'
   }
+
+  const profilePictureUrl = user?.profile_picture
+    ? `http://localhost:8000${user.profile_picture}`
+    : null
+
+  const coverPictureUrl = user?.cover_picture
+    ? `http://localhost:8000${user.cover_picture}`
+    : null
 
   return (
     <div className="space-y-6">
       {/* En-tête avec cover et avatar */}
       <div className="relative">
         {/* Cover image */}
-        <div className="h-48 rounded-xl overflow-hidden bg-gradient-to-r from-primary-500 to-primary-700">
-          <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1573164713988-8665fc963095?w=1200')] bg-cover bg-center opacity-40"></div>
+        <div className="relative h-48 rounded-xl overflow-hidden mb-4">
+          {coverPictureUrl ? (
+            <img src={coverPictureUrl} alt="Cover" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-primary-500 to-primary-700"></div>
+          )}
+          <button
+            onClick={() => coverInputRef.current?.click()}
+            className="absolute z-90 bottom-4 right-4 p-2 bg-white/20 backdrop-blur-sm rounded-lg text-white hover:bg-white/30 transition-colors"
+          >
+            <CameraIcon className="w-5 h-5" />
+          </button>
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleCoverPictureUpload}
+            className="hidden"
+          />
         </div>
         
         {/* Avatar section */}
         <div className="px-6 relative">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12">
             <div className="relative">
-              <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center border-4 border-white dark:border-gray-900 shadow-lg">
-                <span className="text-3xl font-bold text-white">
-                  {getInitials()}
-                </span>
-              </div>
+              {profilePictureUrl ? (
+                <img
+                  src={profilePictureUrl}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-xl object-cover border-4 border-white dark:border-gray-900 shadow-lg"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center border-4 border-white dark:border-gray-900 shadow-lg">
+                  <span className="text-3xl font-bold text-white">{getInitials()}</span>
+                </div>
+              )}
+              <button
+                onClick={() => profileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 p-1.5 bg-white dark:bg-gray-800 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <CameraIcon className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
+              </button>
+              <input
+                ref={profileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePictureUpload}
+                className="hidden"
+              />
             </div>
             <div className="flex-1 pb-2">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -323,16 +406,7 @@ const Profile = () => {
         </div>
       </div>
       
-      {/* Bio placeholder (à ajouter plus tard dans ton backend) */}
-      <div className="px-6">
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <p className="text-gray-600 dark:text-gray-300 text-sm">
-            {user?.bio || "Aucune bio pour le moment. Cliquez sur 'Modifier le profil' pour ajouter une description."}
-          </p>
-        </div>
-      </div>
-      
-      {/* Statistiques (fictives pour l'instant, à connecter plus tard) */}
+      {/* Statistiques */}
       <div className="px-6">
         <ProfileStats />
       </div>
