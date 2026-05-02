@@ -24,10 +24,10 @@ const Sidebar = ({ closeDrawer }) => {
       { path: '/employee', name: 'Employé', icon: FiUsers },
       { path: '/profile', name: 'Profil', icon: FiUser },
       { path: '/timesheet', name: 'Timesheet', icon: FiFileText },
+      { path: '/shapefile', name: 'Shapefile', icon: FiCreditCard },
       { path: '/produits', name: 'Produits', icon: FiPackage },
       { path: '/commandes', name: 'Commandes', icon: FiShoppingCart },
       { path: '/statistiques', name: 'Statistiques', icon: FiBarChart2 },
-      { path: '/shapefile', name: 'Shapefile', icon: FiCreditCard },
       { path: '/settings', name: 'Paramètres', icon: FiSettings },
     ]
   } else {

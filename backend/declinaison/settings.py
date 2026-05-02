@@ -22,6 +22,9 @@ DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
+DATA_UPLOAD_MAX_NUMBER_FILES = 10
+DATA_UPLOAD_MAX_FILE_SIZE = 200 * 1024 * 1024
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -40,6 +43,7 @@ INSTALLED_APPS = [
     # Local apps
     'apps.accounts',
     'apps.employee',
+    'apps.shapefile',
 ]
 
 MIDDLEWARE = [

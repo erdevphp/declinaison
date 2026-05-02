@@ -9,6 +9,7 @@ import Settings from './pages/settings/Settings'
 import Timesheet from './pages/timesheet/Timesheet'
 import Planning from './pages/Planning'
 import Profile from './pages/Profile'
+import ShapefileManager from './pages/ShapefileManager'
 
 // Composant pour les routes privées
 const PrivateRoute = ({ children }) => {
@@ -38,9 +39,9 @@ function App() {
                   <Route path="/employee" element={<EmployeeList />} />
                   <Route path="/timesheet" element={<Timesheet />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/shapefile" element={<ShapefileManager />} />
                   <Route path="/produits" element={<div className="p-6 text-gray-900 dark:text-white">Page Produits</div>} />
                   <Route path="/commandes" element={<div className="p-6 text-gray-900 dark:text-white">Page Commandes</div>} />
-                  <Route path="/shapefile" element={<div className="p-6 text-gray-900 dark:text-white">Shapefile</div>} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </PrivateRoute>
